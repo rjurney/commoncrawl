@@ -16,12 +16,13 @@
 
 package org.commoncrawl.hadoop.io;
 
+import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.mapreduce.Job;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.JobConfigurable;
 
 /**
  * Calculates splits based on the desired number of files per split and the
@@ -32,7 +33,7 @@ import org.apache.hadoop.mapred.JobConfigurable;
  * 
  * @author Albert Chern
  */
-public abstract class ARCSplitCalculator implements JobConfigurable {
+public abstract class ARCSplitCalculator implements Configurable {
 
   /**
    * <tt>arc.split.calculator.files.per.split</tt> - the property where the
@@ -63,8 +64,8 @@ public abstract class ARCSplitCalculator implements JobConfigurable {
    * 
    * @see #P_FILES_PER_SPLIT
    */
-  public static final void setFilesPerSplit(JobConf job, int filesPerSplit) {
-    job.setInt(P_FILES_PER_SPLIT, filesPerSplit);
+  public static final void setFilesPerSplit(Job job, int filesPerSplit) {
+    job.getConfiguration().setInt(P_FILES_PER_SPLIT, filesPerSplit);
   }
 
   /**
@@ -79,8 +80,8 @@ public abstract class ARCSplitCalculator implements JobConfigurable {
    * @param mbPerSplit
    *          the desired number of megabytes per split
    */
-  public static final void setMegabytesPerSplit(JobConf job, int mbPerSplit) {
-    job.setInt(P_MB_PER_SPLIT, mbPerSplit);
+  public static final void setMegabytesPerSplit(Job job, int mbPerSplit) {
+    job.getConfiguration().setInt(P_MB_PER_SPLIT, mbPerSplit);
   }
 
   private int  filesPerSplit;
@@ -89,10 +90,10 @@ public abstract class ARCSplitCalculator implements JobConfigurable {
   /**
    * @inheritDoc
    */
-  public final void configure(JobConf job) {
-    filesPerSplit = job.getInt(P_FILES_PER_SPLIT, 1);
-    bytesPerSplit = job.get(P_MB_PER_SPLIT) == null ? Long.MAX_VALUE : Long
-        .parseLong(job.get(P_MB_PER_SPLIT)) * 1024 * 1024;
+  public final void configure(Job job) {
+    filesPerSplit = job.getConfiguration().getInt(P_FILES_PER_SPLIT, 1);
+    bytesPerSplit = job.getConfiguration().get(P_MB_PER_SPLIT) == null ? Long.MAX_VALUE : Long
+        .parseLong(job.getConfiguration().get(P_MB_PER_SPLIT)) * 1024 * 1024;
     configureImpl(job);
   }
 
@@ -100,11 +101,11 @@ public abstract class ARCSplitCalculator implements JobConfigurable {
    * Hook for subclass configuration.
    * 
    * @param job
-   *          the {@link JobConf} of the job
+   *          the {@link Job} of the job
    * 
-   * @see JobConfigurable#configure
+   * @see Configurable#configure
    */
-  protected void configureImpl(JobConf job) {
+  protected void configureImpl(Job job) {
   }
 
   /**
@@ -118,13 +119,13 @@ public abstract class ARCSplitCalculator implements JobConfigurable {
    * @throws IOException
    *           if an IO error occurs
    */
-  protected abstract Collection<ARCResource> getARCResources(JobConf job)
+  protected abstract Collection<ARCResource> getARCResources(Job job)
       throws IOException;
 
   /**
    * @inheritDoc
    */
-  public ARCSplit[] getARCSplits(JobConf job) throws IOException {
+  public ARCSplit[] getARCSplits(Job job) throws IOException {
 
     List<ARCSplit> splits = new LinkedList<ARCSplit>();
 

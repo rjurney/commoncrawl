@@ -1,27 +1,24 @@
 package org.commoncrawl.samples;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.Counters.Counter;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.Counters.Counter;
-import org.commoncrawl.hadoop.io.ARCInputFormat;
-import org.commoncrawl.hadoop.io.ARCResource;
-import org.commoncrawl.hadoop.io.ARCSplit;
-import org.commoncrawl.hadoop.io.JetS3tARCSource;
+import org.commoncrawl.hadoop.io.*;
 import org.commoncrawl.protocol.shared.ArcFileItem;
 import org.commoncrawl.util.shared.CCStringUtils;
 import org.commoncrawl.util.shared.FileUtils;
+
+import java.io.File;
+import java.io.IOException;
 
 public class BasicArcFileReaderSample {
 
@@ -31,20 +28,22 @@ public class BasicArcFileReaderSample {
 
   public static void main(String[] args) {
 
-    String awsCredentials = args[0];
-    String awsSecret = args[1];
-    String bucketName = args[2];
-    String inputPrefixes = args[3];
+//    String awsCredentials = args[0];
+//    String awsSecret = args[1];
+//    String bucketName = args[2];
+      String inputPrefixes = args[0];
+      System.out.println("inputPrefixes: " + inputPrefixes);
 
     JobConf conf = new JobConf();
+    conf.set(LocalARCSource.P_INPUTS, inputPrefixes);
 
-    System.out.println("using awsCredentials:" + awsCredentials);
-    conf.set(JetS3tARCSource.P_AWS_ACCESS_KEY_ID, awsCredentials);
-    conf.set(JetS3tARCSource.P_AWS_SECRET_ACCESS_KEY, awsSecret);
-    System.out.println("using bucket:" + bucketName);
-    conf.set(JetS3tARCSource.P_BUCKET_NAME, bucketName);
-    System.out.println("using input prefixes:" + inputPrefixes);
-    conf.set(JetS3tARCSource.P_INPUT_PREFIXES, inputPrefixes);
+//    System.out.println("using awsCredentials:" + awsCredentials);
+//    conf.set(JetS3tARCSource.P_AWS_ACCESS_KEY_ID, awsCredentials);
+//    conf.set(JetS3tARCSource.P_AWS_SECRET_ACCESS_KEY, awsSecret);
+//    System.out.println("using bucket:" + bucketName);
+//    conf.set(JetS3tARCSource.P_BUCKET_NAME, bucketName);
+//    System.out.println("using input prefixes:" + inputPrefixes);
+//    conf.set(JetS3tARCSource.P_INPUT_PREFIXES, inputPrefixes);
 
     // crete input format
     ARCInputFormat inputFormat = new ARCInputFormat();

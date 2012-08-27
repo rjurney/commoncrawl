@@ -16,9 +16,10 @@
 
 package org.commoncrawl.hadoop.io;
 
+import org.apache.hadoop.mapreduce.Job;
+
 import java.io.IOException;
 import java.io.InputStream;
-import org.apache.hadoop.mapred.JobConf;
 
 /**
  * An input source for gzipped ARC files.
@@ -43,7 +44,7 @@ public interface ARCSource {
    * @throws IOException
    *           if an IO error occurs
    */
-  public ARCSplit[] getARCSplits(JobConf job) throws IOException;
+  public ARCSplit[] getARCSplits(Job job) throws IOException;
 
   /**
    * Returns a stream for the given resource (from an {@link ARCSplit}) at the

@@ -16,25 +16,23 @@
 
 package org.commoncrawl.hadoop.io;
 
-import java.io.IOException;
-import java.util.Arrays;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.mapred.InputFormat;
-import org.apache.hadoop.mapred.InputSplit;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.JobConfigurable;
-import org.apache.hadoop.mapred.RecordReader;
-import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.commoncrawl.util.shared.ArcFileReader;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * A map reduce input format for gzipped ARC files.
  * 
  * @author Albert Chern (Netseer Corp.)
  */
-public class ARCInputFormat implements InputFormat, JobConfigurable {
+public class ARCInputFormat extends InputFormat implements Configurable {
 
   /**
    * <tt>arc.input.format.io.block.size</tt> - the property where the number of
@@ -85,8 +83,8 @@ public class ARCInputFormat implements InputFormat, JobConfigurable {
    * 
    * @see #P_IO_BLOCK_SIZE
    */
-  public static void setIOBlockSize(JobConf job, int blockSize) {
-    job.setInt(P_IO_BLOCK_SIZE, blockSize);
+  public static void setIOBlockSize(Job job, int blockSize) {
+    job.getConfiguration().setInt(P_IO_BLOCK_SIZE, blockSize);
   }
 
   /**
@@ -99,8 +97,8 @@ public class ARCInputFormat implements InputFormat, JobConfigurable {
    * 
    * @see #P_IO_BUFFER_SIZE
    */
-  public static void setIOBufferSize(JobConf job, int bufferSize) {
-    job.setInt(P_IO_BUFFER_SIZE, bufferSize);
+  public static void setIOBufferSize(Job job, int bufferSize) {
+    job.getConfiguration().setInt(P_IO_BUFFER_SIZE, bufferSize);
   }
 
   /**
@@ -115,8 +113,8 @@ public class ARCInputFormat implements InputFormat, JobConfigurable {
    * 
    * @see #P_IO_TIMEOUT
    */
-  public static void setIOTimeout(JobConf job, long milliseconds) {
-    job.setLong(P_IO_TIMEOUT, milliseconds);
+  public static void setIOTimeout(Job job, long milliseconds) {
+    job.getConfiguration().setLong(P_IO_TIMEOUT, milliseconds);
   }
 
   /**
@@ -129,8 +127,8 @@ public class ARCInputFormat implements InputFormat, JobConfigurable {
    * 
    * @see #P_ARC_SOURCE
    */
-  public static void setARCSourceClass(JobConf job, Class arcSource) {
-    job.setClass(P_ARC_SOURCE, arcSource, ARCSource.class);
+  public static void setARCSourceClass(Job job, Class arcSource) {
+    job.getConfiguration().setClass(P_ARC_SOURCE, arcSource, ARCSource.class);
   }
 
   private static final Log LOG = LogFactory.getLog(ARCInputFormat.class);
@@ -141,12 +139,12 @@ public class ARCInputFormat implements InputFormat, JobConfigurable {
   /**
    * @inheritDoc
    */
-  public void configure(JobConf job) {
+  public void configure(Job job) {
 
-    blockSize = job.getInt(P_IO_BLOCK_SIZE, 32 * 1024);
-    int bufferSize = job.getInt(P_IO_BUFFER_SIZE, 10 * 1024 * 1024);
+    blockSize = job.getConfiguration().getInt(P_IO_BLOCK_SIZE, 32 * 1024);
+    int bufferSize = job.getConfiguration().getInt(P_IO_BUFFER_SIZE, 10 * 1024 * 1024);
     int queueSize = Math.max(1, bufferSize / blockSize);
-    int timeout = job.getInt(P_IO_TIMEOUT, 60 * 1000);
+    int timeout = job.getConfiguration().getInt(P_IO_TIMEOUT, 60 * 1000);
 
     ArcFileReader.setBlockSize(blockSize);
     ArcFileReader.setBufferQueueSize(queueSize);
@@ -156,17 +154,17 @@ public class ARCInputFormat implements InputFormat, JobConfigurable {
     LOG.info("Queue Size: " + queueSize);
     LOG.info("IO Timeout: " + timeout);
 
-    Class archiveSourceClass = job.getClass(P_ARC_SOURCE,
-        JetS3tARCSource.class, ARCSource.class);
+    Class archiveSourceClass = job.getConfiguration().getClass(P_ARC_SOURCE,
+            LocalARCSource.class, ARCSource.class);
     arcSource = (ARCSource) ReflectionUtils
-        .newInstance(archiveSourceClass, job);
+        .newInstance(archiveSourceClass, job.getConfiguration());
   }
 
   /**
    * @inheritDoc
    */
-  public InputSplit[] getSplits(JobConf job, int ignored) throws IOException {
-    InputSplit[] splits = arcSource.getARCSplits(job);
+  public InputSplit[] getSplits(Job job) throws IOException {
+    InputSplit[] splits = arcSource.getARCSplits(job.getConfiguration());
     if (splits.length < 1) {
       throw new IOException("No input to process");
     }
@@ -177,14 +175,17 @@ public class ARCInputFormat implements InputFormat, JobConfigurable {
   /**
    * @inheritDoc
    */
-  public RecordReader getRecordReader(InputSplit split, JobConf job,
-      Reporter reporter) throws IOException {
+  public RecordReader createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException {
     return new ARCSplitReader(job, (ARCSplit) split, arcSource, blockSize);
   }
 
   /**
    * Required method for pre-0.19 versions of Hadoop.
    */
-  public void validateInput(JobConf job) throws IOException {
+  public void validateInput(Job job) throws IOException {
+  }
+
+  public void setConf(Configuration conf) {
+
   }
 }

@@ -16,30 +16,29 @@
 
 package org.commoncrawl.hadoop.io;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.util.StringUtils;
+import org.commoncrawl.protocol.shared.ArcFileItem;
+import org.commoncrawl.util.shared.ArcFileReader;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.RecordReader;
-import org.apache.hadoop.util.StringUtils;
-import org.commoncrawl.protocol.shared.ArcFileItem;
-import org.commoncrawl.util.shared.ArcFileReader;
 
 /**
  * A Hadooop {@link RecordReader} for reading {@link ARCSplit}s.
  * 
  * @author Albert Chern
  */
-public class ARCSplitReader implements RecordReader<Text, ArcFileItem> {
+public class ARCSplitReader extends RecordReader<Text, ArcFileItem> {
 
   private static final Log   LOG           = LogFactory
                                                .getLog(ARCSplitReader.class);
@@ -53,6 +52,9 @@ public class ARCSplitReader implements RecordReader<Text, ArcFileItem> {
   private long               totalBytesRead;
   private Throwable          error;
 
+  Text key;
+  ArcFileItem value;
+
   /**
    * Creates a new <tt>ARCSplitReader</tt>.
    * 
@@ -63,11 +65,11 @@ public class ARCSplitReader implements RecordReader<Text, ArcFileItem> {
    * @param blockSize
    *          the number of bytes at a time to read from each input stream
    */
-  public ARCSplitReader(JobConf job, ARCSplit split, ARCSource source,
+  public ARCSplitReader(Job job, ARCSplit split, ARCSource source,
       int blockSize) {
     this.split = split;
     // record split details in job config for debugging purposes ...
-    job.set(SPLIT_DETAILS, split.toString());
+    job.getConfiguration().set(SPLIT_DETAILS, split.toString());
     this.source = source;
     this.blockSize = blockSize;
     this.readers = new ArcFileReader[split.getResources().length];
@@ -194,7 +196,7 @@ public class ARCSplitReader implements RecordReader<Text, ArcFileItem> {
   /**
    * @inheritDoc
    */
-  public boolean next(Text key, ArcFileItem value) throws IOException {
+  public boolean nextKeyValue() throws IOException {
 
     if (next(value)) {
       // set uri from given key ...
@@ -212,14 +214,14 @@ public class ARCSplitReader implements RecordReader<Text, ArcFileItem> {
   /**
    * @inheritDoc
    */
-  public Text createKey() {
+  public Text getCurrentKey() {
     return new Text();
   }
 
   /**
    * @inheritDoc
    */
-  public ArcFileItem createValue() {
+  public ArcFileItem getCurrentValue() {
     return new ArcFileItem();
   }
 
@@ -241,5 +243,9 @@ public class ARCSplitReader implements RecordReader<Text, ArcFileItem> {
    * @inheritDoc
    */
   public void close() throws IOException {
+  }
+
+  public void initialize(InputSplit split, TaskAttemptContext context) {
+
   }
 }

@@ -16,6 +16,11 @@
 
 package org.commoncrawl.hadoop.io;
 
+import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.Job;
+import org.commoncrawl.util.shared.EscapeUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,17 +28,13 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.JobConfigurable;
-import org.commoncrawl.util.shared.EscapeUtils;
 
 /**
  * An {@link ARCSource} for local files.
  * 
  * @author Albert Chern
  */
-public class LocalARCSource extends ARCSplitCalculator implements ARCSource,
-    JobConfigurable {
+public class LocalARCSource extends ARCSplitCalculator implements ARCSource {
 
   /**
    * <tt>local.arc.source.inputs</tt> - the property where the list of inputs is
@@ -58,8 +59,8 @@ public class LocalARCSource extends ARCSplitCalculator implements ARCSource,
    * 
    * @see #P_INPUTS
    */
-  public static void setInputs(JobConf job, String... paths) {
-    job.set(P_INPUTS, EscapeUtils.concatenate(',', paths));
+  public static void setInputs(Job job, String... paths) {
+    job.getConfiguration().set(P_INPUTS, EscapeUtils.concatenate(',', paths));
   }
 
   /**
@@ -70,15 +71,15 @@ public class LocalARCSource extends ARCSplitCalculator implements ARCSource,
    * 
    * @return the list of inputs, or <tt>null</tt> if not set
    */
-  public static String[] getInputs(JobConf job) {
-    String inputs = job.get(P_INPUTS);
+  public static String[] getInputs(Job job) {
+    String inputs = job.getConfiguration().get(P_INPUTS);
     return inputs == null ? null : EscapeUtils.split(',', inputs);
   }
 
   /**
    * @inheritDoc
    */
-  protected Collection<ARCResource> getARCResources(JobConf job)
+  protected Collection<ARCResource> getARCResources(Job job)
       throws IOException {
 
     String[] inputs = getInputs(job);
